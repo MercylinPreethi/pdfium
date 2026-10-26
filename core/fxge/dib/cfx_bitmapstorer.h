@@ -22,6 +22,7 @@ class CFX_BitmapStorer final : public ScanlineComposerIface {
 
   // ScanlineComposerIface:
   void ComposeScanline(int line, pdfium::span<const uint8_t> scanline) override;
+  pdfium::span<uint8_t> GetWritableScanline(int line) override;
   bool SetInfo(int width,
                int height,
                FXDIB_Format src_format,

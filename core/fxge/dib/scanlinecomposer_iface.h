@@ -18,6 +18,11 @@ class ScanlineComposerIface {
   virtual void ComposeScanline(int line,
                                pdfium::span<const uint8_t> scanline) = 0;
 
+  // Returns a writable pointer to scanline storage when the composer is a
+  // simple bitmap storer, allowing callers to write output in-place and
+  // skip the ComposeScanline memcpy. Returns an empty span by default.
+  virtual pdfium::span<uint8_t> GetWritableScanline(int line) { return {}; }
+
   // `src_format` cannot be `FXDIB_Format::k1bppMask` or
   // `FXDIB_Format::k1bppRgb`.
   virtual bool SetInfo(int width,
