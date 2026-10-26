@@ -209,8 +209,14 @@ constexpr FX_CMYK CmykEncode(uint32_t c, uint32_t m, uint32_t y, uint32_t k) {
 
 #define FXRGB2GRAY(r, g, b) (((b) * 11 + (g) * 59 + (r) * 30) / 100)
 
+// Fast unsigned divide-by-255 via reciprocal multiply.
+// Exact for 0..65535 (covers all 8-bit*8-bit products).
+constexpr unsigned Div255(unsigned x) {
+  return (x * 0x8081U) >> 23;
+}
+
 constexpr int AlphaMerge(int backdrop, int source, int source_alpha) {
-  return (backdrop * (255 - source_alpha) + source * source_alpha) / 255;
+  return Div255(backdrop * (255 - source_alpha) + source * source_alpha);
 }
 
 #define FXCMYK_TODIB(cmyk)                                    \
