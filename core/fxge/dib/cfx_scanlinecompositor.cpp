@@ -39,7 +39,7 @@ using GrayWithAlpha = CFX_ScanlineCompositor::GrayWithAlpha;
 namespace {
 
 uint8_t AlphaUnion(uint8_t dest, uint8_t src) {
-  return dest + src - dest * src / 255;
+  return dest + src - Div255(dest * src);
 }
 
 int Lum(FX_RGB_STRUCT<int> color) {
@@ -142,7 +142,7 @@ void RGB_Blend(BlendMode blend_mode,
 }
 
 int GetAlpha(uint8_t src_alpha, const uint8_t* clip_scan, int col) {
-  return clip_scan ? UNSAFE_TODO(clip_scan[col]) * src_alpha / 255 : src_alpha;
+  return clip_scan ? Div255(UNSAFE_TODO(clip_scan[col]) * src_alpha) : src_alpha;
 }
 
 int GetAlphaWithSrc(uint8_t src_alpha,
@@ -174,7 +174,7 @@ void AlphaMergeToSource(const T& input, U& output, uint8_t alpha) {
 void CompositePixelBgra2Mask(const FX_BGRA_STRUCT<uint8_t>& input,
                              uint8_t clip,
                              uint8_t& output) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (output == 0) {
     output = src_alpha;
     return;
@@ -245,7 +245,7 @@ void CompositePixelBgra2Gray(const FX_BGRA_STRUCT<uint8_t>& input,
                              uint8_t clip,
                              uint8_t& output,
                              BlendMode blend_type) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (src_alpha == 0) {
     return;
   }
@@ -475,7 +475,7 @@ void CompositePixelBgra2BgrNonSeparableBlend(
     uint8_t clip,
     DestPixelStruct& output,
     BlendMode blend_type) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (src_alpha == 0) {
     return;
   }
@@ -489,7 +489,7 @@ void CompositePixelBgra2BgrBlend(const FX_BGRA_STRUCT<uint8_t>& input,
                                  uint8_t clip,
                                  DestPixelStruct& output,
                                  BlendMode blend_type) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (src_alpha == 0) {
     return;
   }
@@ -506,7 +506,7 @@ template <typename DestPixelStruct>
 void CompositePixelBgra2BgrNoBlend(const FX_BGRA_STRUCT<uint8_t>& input,
                                    uint8_t clip,
                                    DestPixelStruct& output) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (src_alpha == 255) {
     output.blue = input.blue;
     output.green = input.green;
@@ -572,7 +572,7 @@ template <typename DestPixelStruct>
 uint8_t CompositePixelBgra2BgraCommon(const FX_BGRA_STRUCT<uint8_t>& input,
                                       uint8_t clip,
                                       DestPixelStruct& output) {
-  const uint8_t src_alpha = input.alpha * clip / 255;
+  const uint8_t src_alpha = Div255(input.alpha * clip);
   if (output.alpha != 0) {
     return src_alpha;
   }
