@@ -32,6 +32,13 @@ void CFX_BitmapStorer::ComposeScanline(int line,
   }
 }
 
+pdfium::span<uint8_t> CFX_BitmapStorer::GetWritableScanline(int line) {
+  if (!bitmap_) {
+    return {};
+  }
+  return bitmap_->GetWritableScanline(line);
+}
+
 bool CFX_BitmapStorer::SetInfo(int width,
                                int height,
                                FXDIB_Format src_format,

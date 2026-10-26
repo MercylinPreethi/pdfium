@@ -607,6 +607,17 @@ void CStretchEngine::StretchVert() {
   auto accum = FixedSizeDataVector<uint32_t>::Uninit(row_bytes);
   pdfium::span<uint32_t> accum_span = accum.span();
 
+  // Rows can be written straight into the destination bitmap, skipping the
+  // copy from `dest_scanline_`, only when the conversion below writes every
+  // byte of the row. The other paths leave some bytes untouched -- the 4th
+  // byte of kBgrx, all but the first channel of 3- and 4-byte pixels on the
+  // 1bpp/8bpp paths, and the color of fully transparent pixels on the alpha
+  // path -- and those bytes must keep coming from `dest_scanline_`.
+  const bool writes_whole_row =
+      DestBpp == 1 ||
+      (DestBpp == 3 && (trans_method_ == TransformMethod::k8BppToManyBpp ||
+                        trans_method_ == TransformMethod::kManyBpptoManyBpp));
+
   for (int row = dest_clip_.top; row < dest_clip_.bottom; ++row) {
     const PixelWeight* pWeights = table.GetPixelWeight(row);
     pdfium::span<const uint32_t> weights = pWeights->GetWeights();
@@ -645,7 +656,14 @@ void CStretchEngine::StretchVert() {
       }
     }
 
-    auto dest_row = pdfium::span(dest_scanline_).first(row_bytes);
+    // Empty when the row must go through `dest_scanline_`.
+    pdfium::span<uint8_t> direct_line;
+    if (writes_whole_row) {
+      direct_line = dest_bitmap_->GetWritableScanline(row - dest_clip_.top);
+    }
+    auto dest_row = direct_line.empty()
+                        ? pdfium::span(dest_scanline_).first(row_bytes)
+                        : direct_line.first(row_bytes);
     switch (trans_method_) {
       case TransformMethod::k1BppTo8Bpp:
       case TransformMethod::k1BppToManyBpp:
@@ -723,7 +741,9 @@ void CStretchEngine::StretchVert() {
         break;
       }
     }
-    dest_bitmap_->ComposeScanline(row - dest_clip_.top, dest_scanline_);
+    if (direct_line.empty()) {
+      dest_bitmap_->ComposeScanline(row - dest_clip_.top, dest_scanline_);
+    }
   }
 }
 
