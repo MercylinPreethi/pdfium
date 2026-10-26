@@ -403,31 +403,48 @@ bool CStretchEngine::ContinueStretchHorz(PauseIndicatorIface* pPause) {
         auto dest_pixels =
             fxcrt::reinterpret_span<FX_BGR_STRUCT<uint8_t>>(dest_span);
         size_t dest_index = 0;
-        for (int col = dest_clip_.left; col < dest_clip_.right; ++col) {
-          const PixelWeight* pWeights = weight_table_.GetPixelWeight(col);
-          pdfium::span<const uint32_t> weights = pWeights->GetWeights();
-          auto src_window =
-              src_row_span.subspan(pWeights->GetSrcStart(), weights.size());
-          uint32_t dest_r = 0;
-          uint32_t dest_g = 0;
-          uint32_t dest_b = 0;
-          for (auto [pixel_weight, src_byte] :
-               fxcrt::Zip(weights, src_window)) {
-            FX_ARGB argb = src_palette_[src_byte];
-            if (dest_format_ == FXDIB_Format::kBgr) {
+        if (dest_format_ == FXDIB_Format::kBgr) {
+          for (int col = dest_clip_.left; col < dest_clip_.right; ++col) {
+            const PixelWeight* pWeights = weight_table_.GetPixelWeight(col);
+            pdfium::span<const uint32_t> weights = pWeights->GetWeights();
+            auto src_window =
+                src_row_span.subspan(pWeights->GetSrcStart(), weights.size());
+            uint32_t dest_r = 0;
+            uint32_t dest_g = 0;
+            uint32_t dest_b = 0;
+            for (auto [pixel_weight, src_byte] :
+                 fxcrt::Zip(weights, src_window)) {
+              FX_ARGB argb = src_palette_[src_byte];
               dest_r += pixel_weight * static_cast<uint8_t>(argb >> 16);
               dest_g += pixel_weight * static_cast<uint8_t>(argb >> 8);
               dest_b += pixel_weight * static_cast<uint8_t>(argb);
-            } else {
+            }
+            FX_BGR_STRUCT<uint8_t>& dest = dest_pixels[dest_index++];
+            dest.blue = PixelFromFixed(dest_b);
+            dest.green = PixelFromFixed(dest_g);
+            dest.red = PixelFromFixed(dest_r);
+          }
+        } else {
+          for (int col = dest_clip_.left; col < dest_clip_.right; ++col) {
+            const PixelWeight* pWeights = weight_table_.GetPixelWeight(col);
+            pdfium::span<const uint32_t> weights = pWeights->GetWeights();
+            auto src_window =
+                src_row_span.subspan(pWeights->GetSrcStart(), weights.size());
+            uint32_t dest_r = 0;
+            uint32_t dest_g = 0;
+            uint32_t dest_b = 0;
+            for (auto [pixel_weight, src_byte] :
+                 fxcrt::Zip(weights, src_window)) {
+              FX_ARGB argb = src_palette_[src_byte];
               dest_b += pixel_weight * static_cast<uint8_t>(argb >> 24);
               dest_g += pixel_weight * static_cast<uint8_t>(argb >> 16);
               dest_r += pixel_weight * static_cast<uint8_t>(argb >> 8);
             }
+            FX_BGR_STRUCT<uint8_t>& dest = dest_pixels[dest_index++];
+            dest.blue = PixelFromFixed(dest_b);
+            dest.green = PixelFromFixed(dest_g);
+            dest.red = PixelFromFixed(dest_r);
           }
-          FX_BGR_STRUCT<uint8_t>& dest = dest_pixels[dest_index++];
-          dest.blue = PixelFromFixed(dest_b);
-          dest.green = PixelFromFixed(dest_g);
-          dest.red = PixelFromFixed(dest_r);
         }
         break;
       }
