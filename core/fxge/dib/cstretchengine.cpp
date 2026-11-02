@@ -635,10 +635,16 @@ void CStretchEngine::StretchVert() {
       // needed -- one full-width write instead of a write plus a
       // read-modify-write.
       if (i == 0) {
+#if defined(__clang__)
+        #pragma clang loop vectorize(enable) vectorize_width(16) interleave_count(1)
+#endif
         for (auto [acc, src_byte] : fxcrt::Zip(accum_span, src_row)) {
           acc = pixel_weight * src_byte;
         }
       } else {
+#if defined(__clang__)
+        #pragma clang loop vectorize(enable) vectorize_width(16) interleave_count(1)
+#endif
         for (auto [acc, src_byte] : fxcrt::Zip(accum_span, src_row)) {
           acc += pixel_weight * src_byte;
         }
